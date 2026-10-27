@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sensores do Celular</title>
+  <meta name="description" content="Detecta o aparelho e seus sensores, coleta as leituras escolhidas e mostra tudo num dashboard.">
+  <meta name="theme-color" content="#2a78d6">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icone-180.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <img src="icone.svg" alt="" width="28" height="28">
+      <span>Sensores do Celular</span>
+    </div>
+    <div class="conta" id="conta" hidden>
+      <span id="conta-email"></span>
+      <button class="botao-texto" id="sair">Sair</button>
+    </div>
+  </header>
+
+  <!-- Login -->
+  <main id="tela-login" class="tela" hidden>
+    <section class="cartao estreito">
+      <h1>Entrar</h1>
+      <p class="sub">Digite seu e-mail. Você vai receber um link de acesso, sem senha.</p>
+      <form id="form-login">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email" required placeholder="voce@exemplo.com">
+        <button class="botao" type="submit" id="botao-login">Enviar link de acesso</button>
+      </form>
+      <div id="login-enviado" hidden>
+        <p class="aviso ok">📩 Link enviado para <b id="email-enviado"></b>.</p>
+        <p class="sub">Abra o e-mail <b>neste mesmo aparelho</b> e toque em <b>“Sign in”</b>
+          (o e-mail chega em inglês). Confira a caixa de spam se não aparecer em 1 minuto.</p>
+        <button class="botao-texto" id="outro-email">Usar outro e-mail</button>
+      </div>
+      <p class="erro" id="login-erro" hidden></p>
+    </section>
+  </main>
+
+  <!-- App -->
+  <div id="tela-app" hidden>
+    <nav class="abas" role="tablist">
+      <button role="tab" class="aba" data-aba="coletar" aria-selected="true">📱 Meu aparelho</button>
+      <button role="tab" class="aba" data-aba="dashboard" aria-selected="false">📊 Dashboard</button>
+    </nav>
+
+    <!-- Aba: aparelho + sensores + coleta -->
+    <main id="aba-coletar" class="tela">
+      <section class="cartao" id="cartao-aparelho">
+        <h2>Aparelho</h2>
+        <div id="aparelho-info" class="aparelho-info"><p class="sub">Identificando…</p></div>
+      </section>
+
+      <section class="cartao">
+        <div class="titulo-linha">
+          <h2>Sensores</h2>
+          <button class="botao" id="detectar">Detectar sensores</button>
+        </div>
+        <p class="sub" id="sensores-dica">Toque em <b>Detectar sensores</b>. Se aparecer um pedido de acesso a movimento e orientação, toque em <b>Permitir</b>.</p>
+        <div id="lista-sensores" class="lista-sensores"></div>
+        <details class="nao-acessiveis" id="nao-acessiveis" hidden>
+          <summary>Sensores que o navegador não deixa ler</summary>
+          <p class="sub">Seu celular pode ter estes sensores, mas nenhum navegador dá acesso a eles. Só um app instalado pela loja conseguiria.</p>
+          <ul>
+            <li><b>Barômetro</b> (pressão do ar / altitude)</li>
+            <li><b>Proximidade</b> (detecta o rosto perto da tela)</li>
+            <li><b>Contador de passos</b></li>
+            <li><b>Temperatura e umidade</b> (raros em celulares)</li>
+            <li><b>Biometria</b> (digital, rosto)</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="cartao" id="cartao-coleta" hidden>
+        <h2>Coleta</h2>
+        <div class="linha-controles">
+          <label for="intervalo">Gravar a cada</label>
+          <select id="intervalo">
+            <option value="1">1 segundo</option>
+            <option value="5" selected>5 segundos</option>
+            <option value="15">15 segundos</option>
+            <option value="60">1 minuto</option>
+          </select>
+        </div>
+        <button class="botao grande" id="botao-coleta">▶ Iniciar coleta</button>
+        <p class="sub" id="coleta-status">Escolha os sensores acima e inicie. A coleta só funciona com o app aberto e a tela ligada.</p>
+        <div id="ao-vivo" class="ao-vivo"></div>
+      </section>
+    </main>
+
+    <!-- Aba: dashboard -->
+    <main id="aba-dashboard" class="tela" hidden>
+      <section class="filtros cartao">
+        <div class="campo">
+          <label for="dash-aparelho">Aparelho</label>
+          <select id="dash-aparelho"></select>
+        </div>
+        <div class="campo">
+          <label for="dash-periodo">Período</label>
+          <select id="dash-periodo">
+            <option value="15">Últimos 15 min</option>
+            <option value="60" selected>Última hora</option>
+            <option value="1440">Últimas 24 horas</option>
+            <option value="10080">Últimos 7 dias</option>
+          </select>
+        </div>
+        <label class="checkbox"><input type="checkbox" id="dash-auto" checked> Atualizar sozinho</label>
+        <button class="botao-texto" id="dash-atualizar">↻ Atualizar</button>
+      </section>
+      <p class="sub" id="dash-status"></p>
+      <div id="dash-resumo" class="resumo"></div>
+      <div id="dash-graficos" class="graficos"></div>
+      <section class="cartao" id="dash-acoes" hidden>
+        <h2>Dados</h2>
+        <div class="linha-botoes">
+          <button class="botao secundario" id="baixar-csv">⬇ Baixar planilha (CSV)</button>
+          <button class="botao perigo" id="apagar-dados">🗑 Apagar leituras deste aparelho</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
